@@ -15,15 +15,24 @@ fun! pymode#breakpoint#init() "{{{
 
         PymodePython << EOF
 
-from imp import find_module
+def _find_spec(name):
+    try:
+        from importlib.util import find_spec
+        if find_spec(name) is not None:
+            return name
+    except ImportError:
+        try:
+            from imp import find_module
+            find_module(name)
+            return name
+        except ImportError:
+            return None
 
 for module in ('wdb', 'pudb', 'ipdb'):
-    try:
-        find_module(module)
-        vim.command('let g:pymode_breakpoint_cmd = "import %s; %s.set_trace()  # XXX BREAKPOINT"' % (module, module))
-        break
-    except ImportError:
-        continue
+	_mod = _find_spec(module)
+	if _mod is not None:
+		vim.command('let g:pymode_breakpoint_cmd = "import %s; %s.set_trace()  # XXX BREAKPOINT"' % (module, module))
+		break
 
 EOF
 
